@@ -12,8 +12,9 @@ export default function App() {
   const [filter, setFilter] = useState('ALL')
   const [tagSearch, setTagSearch] = useState('')
   const [theme, setTheme] = useState('light')
-  const [viewMode, setViewMode] = useState('grid')
-  const [calendarDate, setCalendarDate] = useState(new Date())
+  
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [calendarFilter, setCalendarFilter] = useState(null)
 
   useEffect(() => {
     document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme'
@@ -66,10 +67,10 @@ export default function App() {
   }
 
   const pad = n => n.toString().padStart(2, '0')
-  const calDateString = `${calendarDate.getFullYear()}-${pad(calendarDate.getMonth() + 1)}-${pad(calendarDate.getDate())}`
 
   const visibleTasks = tasks.filter((t) => {
-    if (viewMode === 'calendar') {
+    if (calendarFilter) {
+      const calDateString = `${calendarFilter.getFullYear()}-${pad(calendarFilter.getMonth() + 1)}-${pad(calendarFilter.getDate())}`
       if (!t.dueDate || t.dueDate !== calDateString) return false
     }
 
@@ -93,8 +94,10 @@ export default function App() {
     return 0
   })
 
-  // Determine days that have tasks for calendar highlights
   const datesWithTasks = new Set(tasks.filter(t => t.dueDate).map(t => t.dueDate))
+
+  const displayDate = calendarFilter || new Date()
+  const iconText = `${displayDate.getDate()}/${displayDate.getMonth() + 1}`
 
   return (
     <div className="app-shell">
@@ -117,7 +120,10 @@ export default function App() {
               <button
                 key={f}
                 className={`filter-chip ${filter === f ? 'active' : ''}`}
-                onClick={() => setFilter(f)}
+                onClick={() => {
+                  setFilter(f)
+                  if (f === 'ALL') setCalendarFilter(null)
+                }}
               >
                 {f === 'FAVORITES' ? '⭐ Favorites' : f === 'PINNED' ? '📌 Pinned' : f.replace('_', ' ')}
               </button>
@@ -125,9 +131,34 @@ export default function App() {
           </div>
           
           <div className="filter-row-right">
-            <div className="view-toggle">
-              <button className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>⊞ Grid</button>
-              <button className={`view-btn ${viewMode === 'calendar' ? 'active' : ''}`} onClick={() => setViewMode('calendar')}>📅 Calendar</button>
+            <div className="floating-calendar-wrapper">
+              {calendarFilter && (
+                <button className="clear-cal-btn" onClick={() => setCalendarFilter(null)} title="Clear Date Filter">✖</button>
+              )}
+              <button 
+                className={`floating-calendar-btn ${calendarFilter ? 'active-filter' : ''}`} 
+                onClick={() => setShowCalendar(!showCalendar)}
+                title="Select a Date"
+              >
+                <span className="cal-icon">📅</span>
+                <span className="cal-text">{iconText}</span>
+              </button>
+              
+              {showCalendar && (
+                <div className="floating-calendar-popup">
+                  <Calendar 
+                    onChange={(date) => { setCalendarFilter(date); setShowCalendar(false); }} 
+                    value={displayDate} 
+                    tileClassName={({ date, view }) => {
+                      if (view === 'month') {
+                        const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+                        if (datesWithTasks.has(dStr)) return 'has-task'
+                      }
+                      return null
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="search-box">
@@ -142,22 +173,9 @@ export default function App() {
           </div>
         </div>
 
-        {viewMode === 'calendar' && (
-          <div className="calendar-container">
-            <Calendar 
-              onChange={setCalendarDate} 
-              value={calendarDate} 
-              tileClassName={({ date, view }) => {
-                if (view === 'month') {
-                  const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-                  if (datesWithTasks.has(dStr)) return 'has-task'
-                }
-                return null
-              }}
-            />
-            <div className="calendar-selected-header">
-              <h3>Notes for {calendarDate.toLocaleDateString()}</h3>
-            </div>
+        {calendarFilter && (
+          <div className="filter-active-banner">
+            Showing notes for <strong>{calendarFilter.toLocaleDateString()}</strong> ✨
           </div>
         )}
 
