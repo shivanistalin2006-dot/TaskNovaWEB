@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
+import { compressImage } from '../utils/imageUtils'
 
 const COLORS = [
   { id: 'default', bg: 'var(--task-bg)' },
@@ -72,6 +73,17 @@ export default function TaskForm({ onAdd }) {
     setSubmitting(false)
   }
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    try {
+      const base64 = await compressImage(file)
+      setCover(base64)
+    } catch (err) {
+      console.error('Image compression failed', err)
+    }
+  }
+
   if (!isExpanded) {
     return (
       <div className="task-form-collapsed" onClick={() => setIsExpanded(true)}>
@@ -80,15 +92,24 @@ export default function TaskForm({ onAdd }) {
     )
   }
 
+  const coverUrl = COVERS.find(c => c.id === cover)?.url || (cover !== 'none' ? cover : null)
+  
+  const formStyle = coverUrl ? {
+    backgroundImage: `url(${coverUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    position: 'relative',
+    zIndex: 1,
+    color: '#fff'
+  } : {
+    background: color !== 'default' ? COLORS.find(c=>c.id===color).bg : 'var(--panel-bg)'
+  }
+
   return (
-    <form className={`task-form expanded color-${color}`} onSubmit={handleSubmit} style={{ background: color !== 'default' ? COLORS.find(c=>c.id===color).bg : 'var(--panel-bg)' }}>
-      {cover !== 'none' && (
-        <div className="form-cover" style={{ backgroundImage: `url(${COVERS.find(c => c.id === cover)?.url})` }}>
-          <button type="button" className="remove-cover" onClick={() => setCover('none')}>×</button>
-        </div>
-      )}
+    <form className={`task-form expanded color-${color} ${coverUrl ? 'has-bg-img' : ''}`} onSubmit={handleSubmit} style={formStyle}>
+      {coverUrl && <div className="form-glass-overlay" />}
       
-      <div className="form-content">
+      <div className="form-content" style={{ position: 'relative', zIndex: 2 }}>
         <div className="form-header-row">
           <div className="emoji-picker-btn">
             {emoji}
@@ -151,6 +172,10 @@ export default function TaskForm({ onAdd }) {
               🖼️
               <div className="cover-popup">
                 <div className="cover-thumb none" onClick={() => setCover('none')}>❌</div>
+                <label className="cover-thumb upload" title="Upload custom image">
+                  📁
+                  <input type="file" accept="image/*" onChange={handleFileUpload} style={{display: 'none'}} />
+                </label>
                 {COVERS.filter(c => c.id !== 'none').map(c => (
                   <img 
                     key={c.id} 
