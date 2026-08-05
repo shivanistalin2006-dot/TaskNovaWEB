@@ -8,6 +8,13 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('ALL')
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme'
+  }, [theme])
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light')
 
   const loadTasks = async () => {
     setLoading(true)
@@ -68,6 +75,9 @@ export default function App() {
           <span className="brand-dot" />
           <h1>TaskNova</h1>
         </div>
+        <button className="theme-toggle" onClick={toggleTheme} title="Toggle Theme">
+          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+        </button>
         <p className="tagline">Your tasks, organized and always in sync.</p>
       </header>
 

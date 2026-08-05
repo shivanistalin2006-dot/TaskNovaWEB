@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import confetti from 'canvas-confetti'
 
 const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE']
 
@@ -29,6 +30,13 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
   const toggleDone = () => {
     const newStatus = task.status === 'DONE' ? 'PENDING' : 'DONE'
     onUpdate(task.id, { status: newStatus })
+    if (newStatus === 'DONE') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+    }
   }
 
   if (editing) {
