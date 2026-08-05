@@ -14,6 +14,16 @@ const COLORS = [
   { id: 'dark', bg: '#374151' },
 ]
 
+const TEXT_COLORS = [
+  { id: 'default', color: 'inherit' },
+  { id: 'black', color: '#1f2430' },
+  { id: 'white', color: '#ffffff' },
+  { id: 'red', color: '#ef4444' },
+  { id: 'blue', color: '#3b82f6' },
+  { id: 'purple', color: '#a855f7' },
+  { id: 'green', color: '#22c55e' },
+]
+
 const EMOJIS = ['📘', '💡', '🎯', '🎵', '🎬']
 const COVERS = [
   { id: 'none', url: '' },
@@ -36,6 +46,7 @@ const modules = {
 export default function TaskItem({ task, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(task.title || '')
+  const [titleColor, setTitleColor] = useState(task.titleColor || 'default')
   const [notes, setNotes] = useState(task.notes || '')
   const [tags, setTags] = useState(task.tags ? task.tags.join(', ') : '')
   const [color, setColor] = useState(task.color || 'default')
@@ -50,6 +61,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
 
   useEffect(() => {
     setTitle(task.title || '')
+    setTitleColor(task.titleColor || 'default')
     setNotes(task.notes || '')
     setTags(task.tags ? task.tags.join(', ') : '')
     setColor(task.color || 'default')
@@ -72,12 +84,13 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
 
   const saveEdit = async () => {
     const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
-    await onUpdate(task.id, { title, status, notes, tags: tagsArray, color, emoji, cover, dueDate })
+    await onUpdate(task.id, { title, titleColor, status, notes, tags: tagsArray, color, emoji, cover, dueDate })
     setEditing(false)
   }
 
   const cancelEdit = () => {
     setTitle(task.title || '')
+    setTitleColor(task.titleColor || 'default')
     setNotes(task.notes || '')
     setTags(task.tags ? task.tags.join(', ') : '')
     setColor(task.color || 'default')
@@ -135,6 +148,9 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     setActivePopup(activePopup === popupType ? null : popupType)
   }
 
+  const activeTitleColor = TEXT_COLORS.find(c => c.id === titleColor)?.color || 'inherit'
+  const displayTitleColor = TEXT_COLORS.find(c => c.id === task.titleColor)?.color || 'inherit'
+
   if (editing) {
     return (
       <li className={`task-item editing ${editCoverUrl ? 'has-bg-img' : ''}`} style={editStyle} ref={popupRef}>
@@ -142,7 +158,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div className="edit-fields">
             <div style={{display: 'flex', gap: '8px'}}>
-              <input className="input title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" style={{flex: 1}} />
+              <input className="input title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" style={{flex: 1, color: titleColor !== 'default' ? activeTitleColor : 'inherit'}} />
               <input type="date" className="input date-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{width: 'auto'}} />
             </div>
             <div className="rich-editor-wrapper">
@@ -152,6 +168,22 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
             
             <div className="form-toolbar">
               <div className="toolbar-group">
+                <div className="color-picker" onClick={(e) => togglePopup('titleColor', e)}>
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: titleColor !== 'default' ? activeTitleColor : 'inherit' }}>A</span>
+                  {activePopup === 'titleColor' && (
+                    <div className="color-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                      {TEXT_COLORS.map(c => (
+                        <div 
+                          key={c.id} 
+                          className={`color-circle ${titleColor === c.id ? 'selected' : ''}`} 
+                          style={{ background: c.color === 'inherit' ? '#ccc' : c.color, border: '1px solid #ccc' }} 
+                          onClick={() => { setTitleColor(c.id); setActivePopup(null) }} 
+                          title={`${c.id} text`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="color-picker" onClick={(e) => togglePopup('color', e)}>🎨
                   {activePopup === 'color' && (
                     <div className="color-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
@@ -221,7 +253,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
           <div className="task-header">
             <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
               <span className="task-emoji">{task.emoji || '📘'}</span>
-              <span className="task-title">{task.title}</span>
+              <span className="task-title" style={{ color: task.titleColor !== 'default' ? displayTitleColor : 'inherit' }}>{task.title}</span>
             </div>
             {task.dueDate && <span className="task-due-date" style={{fontSize: '12px', opacity: 0.8, fontWeight: 600}}>📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
           </div>

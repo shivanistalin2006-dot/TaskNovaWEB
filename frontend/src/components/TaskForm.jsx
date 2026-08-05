@@ -12,6 +12,16 @@ const COLORS = [
   { id: 'dark', bg: '#374151' },
 ]
 
+const TEXT_COLORS = [
+  { id: 'default', color: 'inherit' },
+  { id: 'black', color: '#1f2430' },
+  { id: 'white', color: '#ffffff' },
+  { id: 'red', color: '#ef4444' },
+  { id: 'blue', color: '#3b82f6' },
+  { id: 'purple', color: '#a855f7' },
+  { id: 'green', color: '#22c55e' },
+]
+
 const EMOJIS = ['📘', '💡', '🎯', '🎵', '🎬']
 const COVERS = [
   { id: 'none', url: '' },
@@ -34,6 +44,7 @@ const modules = {
 export default function TaskForm({ onAdd }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [title, setTitle] = useState('')
+  const [titleColor, setTitleColor] = useState('default')
   const [notes, setNotes] = useState('')
   const [tags, setTags] = useState('')
   const [color, setColor] = useState('default')
@@ -41,7 +52,7 @@ export default function TaskForm({ onAdd }) {
   const [cover, setCover] = useState('none')
   const [dueDate, setDueDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [activePopup, setActivePopup] = useState(null) // 'color', 'cover', 'emoji'
+  const [activePopup, setActivePopup] = useState(null) // 'color', 'cover', 'emoji', 'titleColor'
 
   const popupRef = useRef(null)
 
@@ -64,6 +75,7 @@ export default function TaskForm({ onAdd }) {
 
     await onAdd({ 
       title: title.trim(), 
+      titleColor,
       description: '',
       notes: notes,
       tags: tagsArray,
@@ -77,6 +89,7 @@ export default function TaskForm({ onAdd }) {
     })
     
     setTitle('')
+    setTitleColor('default')
     setNotes('')
     setTags('')
     setColor('default')
@@ -126,6 +139,8 @@ export default function TaskForm({ onAdd }) {
     setActivePopup(activePopup === popupType ? null : popupType)
   }
 
+  const activeTitleColor = TEXT_COLORS.find(c => c.id === titleColor)?.color || 'inherit'
+
   return (
     <form className={`task-form expanded color-${color} ${coverUrl ? 'has-bg-img' : ''}`} onSubmit={handleSubmit} style={formStyle} ref={popupRef}>
       {coverUrl && <div className="form-glass-overlay" />}
@@ -148,6 +163,7 @@ export default function TaskForm({ onAdd }) {
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            style={{ color: titleColor !== 'default' ? activeTitleColor : 'inherit' }}
           />
           <input 
             type="date" 
@@ -178,6 +194,23 @@ export default function TaskForm({ onAdd }) {
 
         <div className="form-toolbar">
           <div className="toolbar-group">
+            <div className="color-picker" onClick={(e) => togglePopup('titleColor', e)}>
+              <span style={{ fontSize: '20px', fontWeight: 'bold', color: titleColor !== 'default' ? activeTitleColor : 'inherit' }}>A</span>
+              {activePopup === 'titleColor' && (
+                <div className="color-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                  {TEXT_COLORS.map(c => (
+                    <div 
+                      key={c.id} 
+                      className={`color-circle ${titleColor === c.id ? 'selected' : ''}`}
+                      style={{ background: c.color === 'inherit' ? '#ccc' : c.color, border: '1px solid #ccc' }}
+                      onClick={() => { setTitleColor(c.id); setActivePopup(null) }}
+                      title={`${c.id} text`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="color-picker" onClick={(e) => togglePopup('color', e)}>
               🎨
               {activePopup === 'color' && (
