@@ -1,89 +1,115 @@
 import React, { useState } from 'react'
+import DOMPurify from 'dompurify'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import confetti from 'canvas-confetti'
 
-const STATUS_OPTIONS = ['PENDING', 'IN_PROGRESS', 'DONE']
+const COLORS = [
+  { id: 'default', bg: 'var(--task-bg)' },
+  { id: 'yellow', bg: '#fef08a' },
+  { id: 'green', bg: '#bbf7d0' },
+  { id: 'blue', bg: '#bfdbfe' },
+  { id: 'pink', bg: '#fbcfe8' },
+  { id: 'dark', bg: '#374151' },
+]
+
+const EMOJIS = ['📘', '💡', '🎯', '🎵', '🎬']
+const COVERS = [
+  { id: 'none', url: '' },
+  { id: 'mountain', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=600&auto=format&fit=crop' },
+  { id: 'sakura', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=600&auto=format&fit=crop' },
+  { id: 'ocean', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?q=80&w=600&auto=format&fit=crop' },
+  { id: 'space', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop' }
+]
+
+const modules = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ 'list': 'bullet'}, { 'list': 'check' }],
+    ['code-block'],
+    ['clean']
+  ],
+}
 
 export default function TaskItem({ task, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
-  const [title, setTitle] = useState(task.title)
-  const [description, setDescription] = useState(task.description || '')
+  const [title, setTitle] = useState(task.title || '')
   const [notes, setNotes] = useState(task.notes || '')
   const [tags, setTags] = useState(task.tags ? task.tags.join(', ') : '')
+  const [color, setColor] = useState(task.color || 'default')
+  const [emoji, setEmoji] = useState(task.emoji || '📘')
+  const [cover, setCover] = useState(task.cover || 'none')
   const [status, setStatus] = useState(task.status)
   const [deleting, setDeleting] = useState(false)
 
   const saveEdit = async () => {
     const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
-    await onUpdate(task.id, { title, description, status, notes, tags: tagsArray })
+    await onUpdate(task.id, { title, status, notes, tags: tagsArray, color, emoji, cover })
     setEditing(false)
   }
 
   const cancelEdit = () => {
-    setTitle(task.title)
-    setDescription(task.description || '')
+    setTitle(task.title || '')
     setNotes(task.notes || '')
     setTags(task.tags ? task.tags.join(', ') : '')
+    setColor(task.color || 'default')
+    setEmoji(task.emoji || '📘')
+    setCover(task.cover || 'none')
     setStatus(task.status)
     setEditing(false)
-  }
-
-  const handleDelete = async () => {
-    setDeleting(true)
-    await onDelete(task.id)
   }
 
   const toggleDone = () => {
     const newStatus = task.status === 'DONE' ? 'PENDING' : 'DONE'
     onUpdate(task.id, { status: newStatus })
     if (newStatus === 'DONE') {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      })
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
     }
   }
 
-  const toggleFavorite = () => {
-    onUpdate(task.id, { isFavorite: !task.isFavorite })
+  const toggleFavorite = () => onUpdate(task.id, { isFavorite: !task.isFavorite })
+  const togglePin = () => onUpdate(task.id, { isPinned: !task.isPinned })
+  const handleDelete = async () => { setDeleting(true); await onDelete(task.id) }
+
+  const cardStyle = {
+    background: color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)',
+    color: color === 'dark' ? '#fff' : 'inherit'
   }
 
   if (editing) {
     return (
-      <li className="task-item editing">
+      <li className="task-item editing" style={cardStyle}>
         <div className="edit-fields">
-          <input
-            className="input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Task title"
-          />
-          <input
-            className="input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-          />
-          <textarea
-            className="input notes-input"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Rich italic text notes..."
-            rows="2"
-          />
-          <input
-            className="input tags-input"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="Tags (comma separated)"
-          />
-          <select className="input status-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s.replace('_', ' ')}
-              </option>
-            ))}
-          </select>
+          <input className="input title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+          <div className="rich-editor-wrapper">
+            <ReactQuill theme="snow" value={notes} onChange={setNotes} modules={modules} />
+          </div>
+          <input className="input tags-input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma separated)" />
+          
+          <div className="form-toolbar">
+            <div className="toolbar-group">
+              <div className="color-picker">🎨
+                <div className="color-popup">
+                  {COLORS.map(c => (
+                    <div key={c.id} className={`color-circle ${color === c.id ? 'selected' : ''}`} style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }} onClick={() => setColor(c.id)} />
+                  ))}
+                </div>
+              </div>
+              <div className="cover-picker">🖼️
+                <div className="cover-popup">
+                  <div className="cover-thumb none" onClick={() => setCover('none')}>❌</div>
+                  {COVERS.filter(c => c.id !== 'none').map(c => (
+                    <img key={c.id} src={c.url} className={`cover-thumb ${cover === c.id ? 'selected' : ''}`} onClick={() => setCover(c.id)} />
+                  ))}
+                </div>
+              </div>
+              <div className="emoji-picker-btn">{emoji}
+                <div className="emoji-popup">
+                  {EMOJIS.map(e => <span key={e} onClick={() => setEmoji(e)}>{e}</span>)}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="task-actions">
           <button className="save-btn" onClick={saveEdit}>Save</button>
@@ -93,29 +119,28 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     )
   }
 
+  const sanitizedNotes = DOMPurify.sanitize(task.notes || '')
+  
   return (
-    <li className={`task-item status-${task.status.toLowerCase()} ${deleting ? 'fading' : ''} ${task.isFavorite ? 'is-favorite' : ''}`}>
-      <div className="task-left">
-        <label className="check-label">
-          <input type="checkbox" checked={task.status === 'DONE'} onChange={toggleDone} />
-        </label>
-        <button 
-          className={`favorite-btn ${task.isFavorite ? 'active' : ''}`} 
-          onClick={toggleFavorite}
-          title="Pin / Favorite"
-        >
-          {task.isFavorite ? '★' : '☆'}
-        </button>
+    <li className={`task-item status-${task.status.toLowerCase()} ${deleting ? 'fading' : ''} ${task.isPinned ? 'is-pinned' : ''}`} style={cardStyle}>
+      {task.cover && task.cover !== 'none' && (
+        <div className="task-cover" style={{ backgroundImage: `url(${COVERS.find(c => c.id === task.cover)?.url})` }} />
+      )}
+      
+      <div className="task-header-actions">
+        <button className={`pin-btn ${task.isPinned ? 'active' : ''}`} onClick={togglePin} title="Pin Note">📌</button>
+        <button className={`favorite-btn ${task.isFavorite ? 'active' : ''}`} onClick={toggleFavorite} title="Favorite">⭐</button>
       </div>
 
-      <div className="task-content">
+      <div className="task-main-content">
         <div className="task-header">
+          <span className="task-emoji">{task.emoji || '📘'}</span>
           <span className="task-title">{task.title}</span>
-          <span className={`status-badge ${task.status.toLowerCase()}`}>{task.status.replace('_', ' ')}</span>
         </div>
         
-        {task.description && <span className="task-desc">{task.description}</span>}
-        {task.notes && <div className="task-notes"><i>{task.notes}</i></div>}
+        {sanitizedNotes && (
+          <div className="task-rich-notes ql-editor" dangerouslySetInnerHTML={{ __html: sanitizedNotes }} />
+        )}
         
         {task.tags && task.tags.length > 0 && (
           <div className="task-tags">
@@ -126,9 +151,15 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
         )}
       </div>
 
-      <div className="task-actions">
-        <button className="edit-btn" onClick={() => setEditing(true)}>Edit</button>
-        <button className="delete-btn" onClick={handleDelete}>Delete</button>
+      <div className="task-footer">
+        <label className="check-label">
+          <input type="checkbox" checked={task.status === 'DONE'} onChange={toggleDone} /> 
+          <span className="done-text">{task.status === 'DONE' ? 'Completed' : 'Mark done'}</span>
+        </label>
+        <div className="task-actions">
+          <button className="edit-btn" onClick={() => setEditing(true)}>Edit</button>
+          <button className="delete-btn" onClick={handleDelete}>Delete</button>
+        </div>
       </div>
     </li>
   )

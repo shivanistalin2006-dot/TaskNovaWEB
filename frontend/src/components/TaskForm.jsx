@@ -1,71 +1,166 @@
 import React, { useState } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+
+const COLORS = [
+  { id: 'default', bg: 'var(--task-bg)' },
+  { id: 'yellow', bg: '#fef08a' },
+  { id: 'green', bg: '#bbf7d0' },
+  { id: 'blue', bg: '#bfdbfe' },
+  { id: 'pink', bg: '#fbcfe8' },
+  { id: 'dark', bg: '#374151' },
+]
+
+const EMOJIS = ['📘', '💡', '🎯', '🎵', '🎬']
+const COVERS = [
+  { id: 'none', url: '' },
+  { id: 'mountain', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=600&auto=format&fit=crop' },
+  { id: 'sakura', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?q=80&w=600&auto=format&fit=crop' },
+  { id: 'ocean', url: 'https://images.unsplash.com/photo-1505118380757-91f5f5632de0?q=80&w=600&auto=format&fit=crop' },
+  { id: 'space', url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop' }
+]
+
+const modules = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ 'list': 'bullet'}, { 'list': 'check' }],
+    ['code-block'],
+    ['clean']
+  ],
+}
 
 export default function TaskForm({ onAdd }) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [tags, setTags] = useState('')
+  const [color, setColor] = useState('default')
+  const [emoji, setEmoji] = useState('📘')
+  const [cover, setCover] = useState('none')
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() && !notes.trim()) return
     setSubmitting(true)
     
-    // Process tags (comma separated)
     const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
 
     await onAdd({ 
       title: title.trim(), 
-      description: description.trim(), 
-      notes: notes.trim(),
+      description: '',
+      notes: notes,
       tags: tagsArray,
+      color,
+      emoji,
+      cover,
       isFavorite: false,
+      isPinned: false,
       status: 'PENDING' 
     })
+    
     setTitle('')
-    setDescription('')
     setNotes('')
     setTags('')
+    setColor('default')
+    setEmoji('📘')
+    setCover('none')
+    setIsExpanded(false)
     setSubmitting(false)
   }
 
-  return (
-    <form className="task-form" onSubmit={handleSubmit}>
-      <div className="form-row">
-        <input
-          className="input title-input"
-          type="text"
-          placeholder="What do you need to do?"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <button className="add-btn" type="submit" disabled={submitting || !title.trim()}>
-          {submitting ? 'Adding…' : '+ Add Task'}
-        </button>
+  if (!isExpanded) {
+    return (
+      <div className="task-form-collapsed" onClick={() => setIsExpanded(true)}>
+        <span className="add-icon">+</span> Take a note...
       </div>
-      <input
-        className="input desc-input"
-        type="text"
-        placeholder="Add a short description (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <div className="form-row">
-        <textarea
-          className="input notes-input"
-          placeholder="Rich italic text notes... (optional)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows="2"
-        />
+    )
+  }
+
+  return (
+    <form className={`task-form expanded color-${color}`} onSubmit={handleSubmit} style={{ background: color !== 'default' ? COLORS.find(c=>c.id===color).bg : 'var(--panel-bg)' }}>
+      {cover !== 'none' && (
+        <div className="form-cover" style={{ backgroundImage: `url(${COVERS.find(c => c.id === cover)?.url})` }}>
+          <button type="button" className="remove-cover" onClick={() => setCover('none')}>×</button>
+        </div>
+      )}
+      
+      <div className="form-content">
+        <div className="form-header-row">
+          <div className="emoji-picker-btn">
+            {emoji}
+            <div className="emoji-popup">
+              {EMOJIS.map(e => <span key={e} onClick={() => setEmoji(e)}>{e}</span>)}
+            </div>
+          </div>
+          <input
+            className="input title-input"
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        <div className="rich-editor-wrapper">
+          <ReactQuill 
+            theme="snow" 
+            value={notes} 
+            onChange={setNotes} 
+            modules={modules}
+            placeholder="Write your note... (Markdown / Rich Text)"
+          />
+        </div>
+
         <input
           className="input tags-input"
           type="text"
-          placeholder="Tags (comma separated) e.g., work, urgent"
+          placeholder="Add tags (comma separated) e.g. College, Shopping"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
         />
+
+        <div className="form-toolbar">
+          <div className="toolbar-group">
+            <div className="color-picker">
+              🎨
+              <div className="color-popup">
+                {COLORS.map(c => (
+                  <div 
+                    key={c.id} 
+                    className={`color-circle ${color === c.id ? 'selected' : ''}`}
+                    style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }}
+                    onClick={() => setColor(c.id)}
+                    title={c.id}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <div className="cover-picker">
+              🖼️
+              <div className="cover-popup">
+                <div className="cover-thumb none" onClick={() => setCover('none')}>❌</div>
+                {COVERS.filter(c => c.id !== 'none').map(c => (
+                  <img 
+                    key={c.id} 
+                    src={c.url} 
+                    alt={c.id}
+                    className={`cover-thumb ${cover === c.id ? 'selected' : ''}`}
+                    onClick={() => setCover(c.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="toolbar-actions">
+            <button type="button" className="cancel-btn" onClick={() => setIsExpanded(false)}>Close</button>
+            <button className="add-btn" type="submit" disabled={submitting || (!title.trim() && !notes.trim())}>
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   )

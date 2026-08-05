@@ -8,6 +8,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('ALL')
+  const [tagSearch, setTagSearch] = useState('')
   const [theme, setTheme] = useState('light')
 
   useEffect(() => {
@@ -61,70 +62,76 @@ export default function App() {
   }
 
   const visibleTasks = tasks.filter((t) => {
-    if (filter === 'ALL') return true
-    return t.status === filter
-  }).sort((a, b) => {
-    if (a.isFavorite === b.isFavorite) return 0
-    return a.isFavorite ? -1 : 1
-  })
+    // Top bar filters
+    if (filter === 'FAVORITES') {
+      if (!t.isFavorite) return false
+    } else if (filter === 'PINNED') {
+      if (!t.isPinned) return false
+    } else if (filter !== 'ALL') {
+      if (t.status !== filter) return false
+    }
 
-  const pendingCount = tasks.filter((t) => t.status === 'PENDING').length
-  const doneCount = tasks.filter((t) => t.status === 'DONE').length
+    // Tag search filter
+    if (tagSearch.trim() !== '') {
+      const search = tagSearch.toLowerCase().replace('#', '').trim()
+      if (!t.tags || !t.tags.some(tag => tag.toLowerCase().includes(search))) {
+        return false
+      }
+    }
+    return true
+  }).sort((a, b) => {
+    // Pinned notes always at top
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+    return 0
+  })
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="brand">
           <span className="brand-dot" />
-          <h1>TaskNova</h1>
+          <h1>TaskNova Notes</h1>
         </div>
         <button className="theme-toggle" onClick={toggleTheme} title="Toggle Theme">
           {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
         </button>
-        <p className="tagline">Your tasks, organized and always in sync.</p>
       </header>
 
       <main className="app-main">
         <TaskForm onAdd={handleAdd} />
 
-        <div className="stats-row">
-          <div className="stat-pill">
-            <span className="stat-number">{tasks.length}</span>
-            <span className="stat-label">Total</span>
+        <div className="filter-bar">
+          <div className="filter-row">
+            {['ALL', 'FAVORITES', 'PINNED', 'PENDING', 'DONE'].map((f) => (
+              <button
+                key={f}
+                className={`filter-chip ${filter === f ? 'active' : ''}`}
+                onClick={() => setFilter(f)}
+              >
+                {f === 'FAVORITES' ? '⭐ Favorites' : f === 'PINNED' ? '📌 Pinned' : f.replace('_', ' ')}
+              </button>
+            ))}
           </div>
-          <div className="stat-pill pending">
-            <span className="stat-number">{pendingCount}</span>
-            <span className="stat-label">Pending</span>
+          
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="🔍 Search tags (e.g. #college)" 
+              value={tagSearch}
+              onChange={(e) => setTagSearch(e.target.value)}
+              className="tag-search-input"
+            />
           </div>
-          <div className="stat-pill done">
-            <span className="stat-number">{doneCount}</span>
-            <span className="stat-label">Done</span>
-          </div>
-          <button className="refresh-btn" onClick={loadTasks} title="Reload from database">
-            ⟳ Refresh
-          </button>
-        </div>
-
-        <div className="filter-row">
-          {['ALL', 'PENDING', 'IN_PROGRESS', 'DONE'].map((f) => (
-            <button
-              key={f}
-              className={`filter-chip ${filter === f ? 'active' : ''}`}
-              onClick={() => setFilter(f)}
-            >
-              {f.replace('_', ' ')}
-            </button>
-          ))}
         </div>
 
         {error && <div className="error-banner">{error}</div>}
 
         {loading ? (
-          <div className="empty-state">Loading your tasks…</div>
+          <div className="empty-state">Loading your notes…</div>
         ) : visibleTasks.length === 0 ? (
-          <div className="empty-state">No tasks here yet. Add one above! ✨</div>
+          <div className="empty-state">No notes found. Add one above! ✨</div>
         ) : (
-          <ul className="task-list">
+          <ul className="notes-grid">
             {visibleTasks.map((task) => (
               <TaskItem
                 key={task.id}
@@ -138,7 +145,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        <span>TaskNova · FastAPI + Oracle DB + React</span>
+        <span>TaskNova Notes · Built with React & Vite</span>
       </footer>
     </div>
   )
