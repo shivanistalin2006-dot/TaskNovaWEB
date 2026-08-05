@@ -17,9 +17,8 @@ export const api = {
   create: async (task) => {
     const tasks = getTasks();
     const newTask = {
+      ...task,
       id: Date.now(),
-      title: task.title,
-      description: task.description || '',
       status: task.status || 'PENDING',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
