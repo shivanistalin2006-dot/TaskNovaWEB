@@ -63,6 +63,9 @@ export default function App() {
   const visibleTasks = tasks.filter((t) => {
     if (filter === 'ALL') return true
     return t.status === filter
+  }).sort((a, b) => {
+    if (a.isFavorite === b.isFavorite) return 0
+    return a.isFavorite ? -1 : 1
   })
 
   const pendingCount = tasks.filter((t) => t.status === 'PENDING').length
