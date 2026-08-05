@@ -200,7 +200,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        <span>TaskNova Notes · Built with React & Vite</span>
+        <span>Just to remember your plan</span>
       </footer>
     </div>
   )
