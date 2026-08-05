@@ -37,6 +37,7 @@ export default function TaskForm({ onAdd }) {
   const [color, setColor] = useState('default')
   const [emoji, setEmoji] = useState('📘')
   const [cover, setCover] = useState('none')
+  const [dueDate, setDueDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -54,6 +55,7 @@ export default function TaskForm({ onAdd }) {
       color,
       emoji,
       cover,
+      dueDate,
       isFavorite: false,
       isPinned: false,
       status: 'PENDING' 
@@ -65,6 +67,7 @@ export default function TaskForm({ onAdd }) {
     setColor('default')
     setEmoji('📘')
     setCover('none')
+    setDueDate('')
     setIsExpanded(false)
     setSubmitting(false)
   }
@@ -99,6 +102,13 @@ export default function TaskForm({ onAdd }) {
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+          />
+          <input 
+            type="date" 
+            className="input date-input" 
+            value={dueDate} 
+            onChange={(e) => setDueDate(e.target.value)} 
+            title="Due Date"
           />
         </div>
 

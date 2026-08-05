@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react'
+import Calendar from 'react-calendar'
+import 'react-calendar/dist/Calendar.css'
 import { api } from './api'
 import TaskForm from './components/TaskForm.jsx'
 import TaskItem from './components/TaskItem.jsx'
@@ -10,6 +12,8 @@ export default function App() {
   const [filter, setFilter] = useState('ALL')
   const [tagSearch, setTagSearch] = useState('')
   const [theme, setTheme] = useState('light')
+  const [viewMode, setViewMode] = useState('grid')
+  const [calendarDate, setCalendarDate] = useState(new Date())
 
   useEffect(() => {
     document.body.className = theme === 'dark' ? 'dark-theme' : 'light-theme'
@@ -61,8 +65,14 @@ export default function App() {
     }
   }
 
+  const pad = n => n.toString().padStart(2, '0')
+  const calDateString = `${calendarDate.getFullYear()}-${pad(calendarDate.getMonth() + 1)}-${pad(calendarDate.getDate())}`
+
   const visibleTasks = tasks.filter((t) => {
-    // Top bar filters
+    if (viewMode === 'calendar') {
+      if (!t.dueDate || t.dueDate !== calDateString) return false
+    }
+
     if (filter === 'FAVORITES') {
       if (!t.isFavorite) return false
     } else if (filter === 'PINNED') {
@@ -71,7 +81,6 @@ export default function App() {
       if (t.status !== filter) return false
     }
 
-    // Tag search filter
     if (tagSearch.trim() !== '') {
       const search = tagSearch.toLowerCase().replace('#', '').trim()
       if (!t.tags || !t.tags.some(tag => tag.toLowerCase().includes(search))) {
@@ -80,10 +89,12 @@ export default function App() {
     }
     return true
   }).sort((a, b) => {
-    // Pinned notes always at top
     if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
     return 0
   })
+
+  // Determine days that have tasks for calendar highlights
+  const datesWithTasks = new Set(tasks.filter(t => t.dueDate).map(t => t.dueDate))
 
   return (
     <div className="app-shell">
@@ -113,23 +124,49 @@ export default function App() {
             ))}
           </div>
           
-          <div className="search-box">
-            <input 
-              type="text" 
-              placeholder="🔍 Search tags (e.g. #college)" 
-              value={tagSearch}
-              onChange={(e) => setTagSearch(e.target.value)}
-              className="tag-search-input"
-            />
+          <div className="filter-row-right">
+            <div className="view-toggle">
+              <button className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>⊞ Grid</button>
+              <button className={`view-btn ${viewMode === 'calendar' ? 'active' : ''}`} onClick={() => setViewMode('calendar')}>📅 Calendar</button>
+            </div>
+
+            <div className="search-box">
+              <input 
+                type="text" 
+                placeholder="🔍 Search tags" 
+                value={tagSearch}
+                onChange={(e) => setTagSearch(e.target.value)}
+                className="tag-search-input"
+              />
+            </div>
           </div>
         </div>
+
+        {viewMode === 'calendar' && (
+          <div className="calendar-container">
+            <Calendar 
+              onChange={setCalendarDate} 
+              value={calendarDate} 
+              tileClassName={({ date, view }) => {
+                if (view === 'month') {
+                  const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+                  if (datesWithTasks.has(dStr)) return 'has-task'
+                }
+                return null
+              }}
+            />
+            <div className="calendar-selected-header">
+              <h3>Notes for {calendarDate.toLocaleDateString()}</h3>
+            </div>
+          </div>
+        )}
 
         {error && <div className="error-banner">{error}</div>}
 
         {loading ? (
           <div className="empty-state">Loading your notes…</div>
         ) : visibleTasks.length === 0 ? (
-          <div className="empty-state">No notes found. Add one above! ✨</div>
+          <div className="empty-state">No notes found for this view. ✨</div>
         ) : (
           <ul className="notes-grid">
             {visibleTasks.map((task) => (

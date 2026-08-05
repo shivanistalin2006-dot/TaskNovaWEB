@@ -39,12 +39,13 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
   const [color, setColor] = useState(task.color || 'default')
   const [emoji, setEmoji] = useState(task.emoji || '📘')
   const [cover, setCover] = useState(task.cover || 'none')
+  const [dueDate, setDueDate] = useState(task.dueDate || '')
   const [status, setStatus] = useState(task.status)
   const [deleting, setDeleting] = useState(false)
 
   const saveEdit = async () => {
     const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
-    await onUpdate(task.id, { title, status, notes, tags: tagsArray, color, emoji, cover })
+    await onUpdate(task.id, { title, status, notes, tags: tagsArray, color, emoji, cover, dueDate })
     setEditing(false)
   }
 
@@ -55,6 +56,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     setColor(task.color || 'default')
     setEmoji(task.emoji || '📘')
     setCover(task.cover || 'none')
+    setDueDate(task.dueDate || '')
     setStatus(task.status)
     setEditing(false)
   }
@@ -80,7 +82,10 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     return (
       <li className="task-item editing" style={cardStyle}>
         <div className="edit-fields">
-          <input className="input title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+          <div style={{display: 'flex', gap: '8px'}}>
+            <input className="input title-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" style={{flex: 1}} />
+            <input type="date" className="input date-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={{width: 'auto'}} />
+          </div>
           <div className="rich-editor-wrapper">
             <ReactQuill theme="snow" value={notes} onChange={setNotes} modules={modules} />
           </div>
@@ -134,8 +139,11 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
 
       <div className="task-main-content">
         <div className="task-header">
-          <span className="task-emoji">{task.emoji || '📘'}</span>
-          <span className="task-title">{task.title}</span>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+            <span className="task-emoji">{task.emoji || '📘'}</span>
+            <span className="task-title">{task.title}</span>
+          </div>
+          {task.dueDate && <span className="task-due-date" style={{fontSize: '12px', opacity: 0.8, fontWeight: 600}}>📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
         </div>
         
         {sanitizedNotes && (
