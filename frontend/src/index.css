@@ -183,8 +183,8 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 10;
   white-space: nowrap;
+  margin-top: 8px;
 }
-.emoji-picker-btn:hover .emoji-popup { display: flex; gap: 8px; }
 .emoji-popup span { cursor: pointer; transition: transform 0.2s; }
 .emoji-popup span:hover { transform: scale(1.2); }
 
@@ -241,7 +241,8 @@ body {
 .color-popup, .cover-popup {
   display: none;
   position: absolute;
-  bottom: 120%;
+  bottom: 100%;
+  margin-bottom: 8px;
   left: 0;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
@@ -253,7 +254,6 @@ body {
   width: 180px;
   gap: 8px;
 }
-.color-picker:hover .color-popup, .cover-picker:hover .cover-popup { display: flex; }
 .color-circle {
   width: 24px; height: 24px; border-radius: 50%; cursor: pointer; transition: transform 0.2s;
 }

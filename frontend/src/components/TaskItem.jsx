@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import DOMPurify from 'dompurify'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
@@ -43,6 +43,20 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
   const [dueDate, setDueDate] = useState(task.dueDate || '')
   const [status, setStatus] = useState(task.status)
   const [deleting, setDeleting] = useState(false)
+  const [activePopup, setActivePopup] = useState(null)
+
+  const popupRef = useRef(null)
+
+  useEffect(() => {
+    if (!editing) return;
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setActivePopup(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [editing])
 
   const saveEdit = async () => {
     const tagsArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
@@ -76,6 +90,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     try {
       const base64 = await compressImage(file)
       setCover(base64)
+      setActivePopup(null)
     } catch (err) {
       console.error('Image compression failed', err)
     }
@@ -92,19 +107,25 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     background: coverUrl ? `url(${coverUrl}) center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
     color: (color === 'dark' || coverUrl) ? '#fff' : 'inherit',
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'hidden' // Important for background overlay
   }
 
   const editStyle = {
     background: editCoverUrl ? `url(${editCoverUrl}) center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
     color: (color === 'dark' || editCoverUrl) ? '#fff' : 'inherit',
     position: 'relative',
-    overflow: 'hidden'
+    overflow: 'visible' // Let popups overflow
+  }
+
+  const togglePopup = (popupType, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActivePopup(activePopup === popupType ? null : popupType)
   }
 
   if (editing) {
     return (
-      <li className={`task-item editing ${editCoverUrl ? 'has-bg-img' : ''}`} style={editStyle}>
+      <li className={`task-item editing ${editCoverUrl ? 'has-bg-img' : ''}`} style={editStyle} ref={popupRef}>
         {editCoverUrl && <div className="card-glass-overlay" />}
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div className="edit-fields">
@@ -119,29 +140,46 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
             
             <div className="form-toolbar">
               <div className="toolbar-group">
-                <div className="color-picker">🎨
-                  <div className="color-popup">
-                    {COLORS.map(c => (
-                      <div key={c.id} className={`color-circle ${color === c.id ? 'selected' : ''}`} style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }} onClick={() => setColor(c.id)} />
-                    ))}
-                  </div>
+                <div className="color-picker" onClick={(e) => togglePopup('color', e)}>🎨
+                  {activePopup === 'color' && (
+                    <div className="color-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                      {COLORS.map(c => (
+                        <div 
+                          key={c.id} 
+                          className={`color-circle ${color === c.id ? 'selected' : ''}`} 
+                          style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }} 
+                          onClick={() => { setColor(c.id); setActivePopup(null) }} 
+                          title={c.id}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="cover-picker">🖼️
-                  <div className="cover-popup">
-                    <div className="cover-thumb none" onClick={() => setCover('none')}>❌</div>
-                    <label className="cover-thumb upload" title="Upload custom image">
-                      📁
-                      <input type="file" accept="image/*" onChange={handleFileUpload} style={{display: 'none'}} />
-                    </label>
-                    {COVERS.filter(c => c.id !== 'none').map(c => (
-                      <img key={c.id} src={c.url} className={`cover-thumb ${cover === c.id ? 'selected' : ''}`} onClick={() => setCover(c.id)} />
-                    ))}
-                  </div>
+                <div className="cover-picker" onClick={(e) => togglePopup('cover', e)}>🖼️
+                  {activePopup === 'cover' && (
+                    <div className="cover-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                      <div className="cover-thumb none" onClick={() => { setCover('none'); setActivePopup(null) }}>❌</div>
+                      <label className="cover-thumb upload" title="Upload custom image">
+                        📁
+                        <input type="file" accept="image/*" onChange={handleFileUpload} style={{display: 'none'}} onClick={(e) => e.stopPropagation()} />
+                      </label>
+                      {COVERS.filter(c => c.id !== 'none').map(c => (
+                        <img 
+                          key={c.id} 
+                          src={c.url} 
+                          className={`cover-thumb ${cover === c.id ? 'selected' : ''}`} 
+                          onClick={() => { setCover(c.id); setActivePopup(null) }} 
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="emoji-picker-btn">{emoji}
-                  <div className="emoji-popup">
-                    {EMOJIS.map(e => <span key={e} onClick={() => setEmoji(e)}>{e}</span>)}
-                  </div>
+                <div className="emoji-picker-btn" onClick={(e) => togglePopup('emoji', e)}>{emoji}
+                  {activePopup === 'emoji' && (
+                    <div className="emoji-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                      {EMOJIS.map(e => <span key={e} onClick={() => { setEmoji(e); setActivePopup(null) }}>{e}</span>)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

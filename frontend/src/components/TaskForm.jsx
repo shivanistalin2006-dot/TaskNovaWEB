@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import { compressImage } from '../utils/imageUtils'
@@ -40,6 +40,19 @@ export default function TaskForm({ onAdd }) {
   const [cover, setCover] = useState('none')
   const [dueDate, setDueDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [activePopup, setActivePopup] = useState(null) // 'color', 'cover', 'emoji'
+
+  const popupRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setActivePopup(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -79,6 +92,7 @@ export default function TaskForm({ onAdd }) {
     try {
       const base64 = await compressImage(file)
       setCover(base64)
+      setActivePopup(null)
     } catch (err) {
       console.error('Image compression failed', err)
     }
@@ -105,17 +119,27 @@ export default function TaskForm({ onAdd }) {
     background: color !== 'default' ? COLORS.find(c=>c.id===color).bg : 'var(--panel-bg)'
   }
 
+  const togglePopup = (popupType, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActivePopup(activePopup === popupType ? null : popupType)
+  }
+
   return (
-    <form className={`task-form expanded color-${color} ${coverUrl ? 'has-bg-img' : ''}`} onSubmit={handleSubmit} style={formStyle}>
+    <form className={`task-form expanded color-${color} ${coverUrl ? 'has-bg-img' : ''}`} onSubmit={handleSubmit} style={formStyle} ref={popupRef}>
       {coverUrl && <div className="form-glass-overlay" />}
       
       <div className="form-content" style={{ position: 'relative', zIndex: 2 }}>
         <div className="form-header-row">
-          <div className="emoji-picker-btn">
+          <div className="emoji-picker-btn" onClick={(e) => togglePopup('emoji', e)}>
             {emoji}
-            <div className="emoji-popup">
-              {EMOJIS.map(e => <span key={e} onClick={() => setEmoji(e)}>{e}</span>)}
-            </div>
+            {activePopup === 'emoji' && (
+              <div className="emoji-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                {EMOJIS.map(e => (
+                  <span key={e} onClick={() => { setEmoji(e); setActivePopup(null) }}>{e}</span>
+                ))}
+              </div>
+            )}
           </div>
           <input
             className="input title-input"
@@ -153,39 +177,43 @@ export default function TaskForm({ onAdd }) {
 
         <div className="form-toolbar">
           <div className="toolbar-group">
-            <div className="color-picker">
+            <div className="color-picker" onClick={(e) => togglePopup('color', e)}>
               🎨
-              <div className="color-popup">
-                {COLORS.map(c => (
-                  <div 
-                    key={c.id} 
-                    className={`color-circle ${color === c.id ? 'selected' : ''}`}
-                    style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }}
-                    onClick={() => setColor(c.id)}
-                    title={c.id}
-                  />
-                ))}
-              </div>
+              {activePopup === 'color' && (
+                <div className="color-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                  {COLORS.map(c => (
+                    <div 
+                      key={c.id} 
+                      className={`color-circle ${color === c.id ? 'selected' : ''}`}
+                      style={{ background: c.bg === 'var(--task-bg)' ? '#fff' : c.bg, border: '1px solid #ccc' }}
+                      onClick={() => { setColor(c.id); setActivePopup(null) }}
+                      title={c.id}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
             
-            <div className="cover-picker">
+            <div className="cover-picker" onClick={(e) => togglePopup('cover', e)}>
               🖼️
-              <div className="cover-popup">
-                <div className="cover-thumb none" onClick={() => setCover('none')}>❌</div>
-                <label className="cover-thumb upload" title="Upload custom image">
-                  📁
-                  <input type="file" accept="image/*" onChange={handleFileUpload} style={{display: 'none'}} />
-                </label>
-                {COVERS.filter(c => c.id !== 'none').map(c => (
-                  <img 
-                    key={c.id} 
-                    src={c.url} 
-                    alt={c.id}
-                    className={`cover-thumb ${cover === c.id ? 'selected' : ''}`}
-                    onClick={() => setCover(c.id)}
-                  />
-                ))}
-              </div>
+              {activePopup === 'cover' && (
+                <div className="cover-popup" style={{ display: 'flex' }} onClick={(e) => e.stopPropagation()}>
+                  <div className="cover-thumb none" onClick={() => { setCover('none'); setActivePopup(null) }}>❌</div>
+                  <label className="cover-thumb upload" title="Upload custom image">
+                    📁
+                    <input type="file" accept="image/*" onChange={handleFileUpload} style={{display: 'none'}} onClick={(e) => e.stopPropagation()} />
+                  </label>
+                  {COVERS.filter(c => c.id !== 'none').map(c => (
+                    <img 
+                      key={c.id} 
+                      src={c.url} 
+                      alt={c.id}
+                      className={`cover-thumb ${cover === c.id ? 'selected' : ''}`}
+                      onClick={() => { setCover(c.id); setActivePopup(null) }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
