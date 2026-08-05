@@ -26,6 +26,7 @@ const COVERS = [
 const modules = {
   toolbar: [
     ['bold', 'italic', 'underline'],
+    [{ 'color': [] }, { 'background': [] }],
     [{ 'list': 'bullet'}, { 'list': 'check' }],
     ['code-block'],
     ['clean']
@@ -46,6 +47,17 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
   const [activePopup, setActivePopup] = useState(null)
 
   const popupRef = useRef(null)
+
+  useEffect(() => {
+    setTitle(task.title || '')
+    setNotes(task.notes || '')
+    setTags(task.tags ? task.tags.join(', ') : '')
+    setColor(task.color || 'default')
+    setEmoji(task.emoji || '📘')
+    setCover(task.cover || 'none')
+    setDueDate(task.dueDate || '')
+    setStatus(task.status)
+  }, [task])
 
   useEffect(() => {
     if (!editing) return;
@@ -104,14 +116,14 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
   const editCoverUrl = COVERS.find(c => c.id === cover)?.url || (cover !== 'none' ? cover : null)
 
   const cardStyle = {
-    background: coverUrl ? `url(${coverUrl}) center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
+    background: coverUrl ? `url("${coverUrl}") center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
     color: (color === 'dark' || coverUrl) ? '#fff' : 'inherit',
     position: 'relative',
     overflow: 'hidden' // Important for background overlay
   }
 
   const editStyle = {
-    background: editCoverUrl ? `url(${editCoverUrl}) center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
+    background: editCoverUrl ? `url("${editCoverUrl}") center/cover` : (color !== 'default' ? COLORS.find(c => c.id === color)?.bg : 'var(--task-bg)'),
     color: (color === 'dark' || editCoverUrl) ? '#fff' : 'inherit',
     position: 'relative',
     overflow: 'visible' // Let popups overflow

@@ -219,7 +219,7 @@ body {
   min-height: 100px;
   font-family: inherit !important;
 }
-.ql-editor { font-size: 15px; color: var(--text-main); }
+.ql-editor { font-size: 15px; color: inherit; }
 
 .tags-input {
   margin-bottom: 12px;

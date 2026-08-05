@@ -24,6 +24,7 @@ const COVERS = [
 const modules = {
   toolbar: [
     ['bold', 'italic', 'underline'],
+    [{ 'color': [] }, { 'background': [] }],
     [{ 'list': 'bullet'}, { 'list': 'check' }],
     ['code-block'],
     ['clean']
@@ -109,7 +110,7 @@ export default function TaskForm({ onAdd }) {
   const coverUrl = COVERS.find(c => c.id === cover)?.url || (cover !== 'none' ? cover : null)
   
   const formStyle = coverUrl ? {
-    backgroundImage: `url(${coverUrl})`,
+    backgroundImage: `url("${coverUrl}")`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     position: 'relative',
