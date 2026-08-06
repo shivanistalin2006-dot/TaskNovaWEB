@@ -192,7 +192,7 @@ export default function App() {
   });
 
   return (
-    <div className="app-shell" style={{ background: activeSpace !== 'all' ? (theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.4)') : 'transparent', backdropFilter: activeSpace !== 'all' ? 'blur(10px)' : 'none', minHeight: '100vh', transition: 'all 0.5s ease' }}>
+    <div className="app-shell" style={{ background: theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', minHeight: '100vh', transition: 'all 0.5s ease' }}>
       
       <CommandPalette 
         isOpen={cmdOpen} 
