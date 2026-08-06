@@ -148,6 +148,16 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     setActivePopup(activePopup === popupType ? null : popupType)
   }
 
+  const getReadingTime = (html) => {
+    if (!html) return '';
+    const text = html.replace(/<[^>]+>/g, '').trim();
+    if (!text) return '';
+    const words = text.split(/\s+/).length;
+    if (words < 20) return '25 sec read';
+    const mins = Math.ceil(words / 200);
+    return `${mins} min read`;
+  }
+
   const activeTitleColor = TEXT_COLORS.find(c => c.id === titleColor)?.color || 'inherit'
   const displayTitleColor = TEXT_COLORS.find(c => c.id === task.titleColor)?.color || 'inherit'
 
@@ -255,7 +265,10 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
               <span className="task-emoji">{task.emoji || '📘'}</span>
               <span className="task-title" style={{ color: task.titleColor !== 'default' ? displayTitleColor : 'inherit' }}>{task.title}</span>
             </div>
-            {task.dueDate && <span className="task-due-date" style={{fontSize: '12px', opacity: 0.8, fontWeight: 600}}>📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+              {task.dueDate && <span className="task-due-date" style={{fontSize: '12px', opacity: 0.8, fontWeight: 600}}>📅 {new Date(task.dueDate).toLocaleDateString()}</span>}
+              {sanitizedNotes && <span className="reading-time-badge" style={{fontSize: '11px', opacity: 0.7, fontWeight: 500}}>⏱️ {getReadingTime(sanitizedNotes)}</span>}
+            </div>
           </div>
           
           {sanitizedNotes && (

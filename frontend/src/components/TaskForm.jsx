@@ -57,6 +57,18 @@ export default function TaskForm({ onAdd }) {
   const popupRef = useRef(null)
 
   useEffect(() => {
+    const handleExpand = () => {
+      setIsExpanded(true);
+      setTimeout(() => {
+        const input = document.querySelector('.title-input');
+        if (input) input.focus();
+      }, 50);
+    };
+    window.addEventListener('expand-task-form', handleExpand);
+    return () => window.removeEventListener('expand-task-form', handleExpand);
+  }, [])
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (popupRef.current && !popupRef.current.contains(event.target)) {
         setActivePopup(null)
