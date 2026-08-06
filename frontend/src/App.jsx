@@ -16,13 +16,26 @@ const getInitialTheme = () => {
 }
 
 const SPACES = [
-  { id: 'all', name: 'All Spaces', emoji: '🌌', theme: 'light', bgUrl: '' },
+  { id: 'all', name: 'All Spaces', emoji: '🌌', theme: 'dynamic', bgUrl: '' },
   { id: 'study', name: 'Study', emoji: '🎓', theme: 'light', bgUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?q=80&w=1920&auto=format&fit=crop' },
   { id: 'work', name: 'Work', emoji: '💼', theme: 'dark', bgUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1920&auto=format&fit=crop' },
   { id: 'home', name: 'Home', emoji: '🏡', theme: 'light', bgUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1920&auto=format&fit=crop' },
   { id: 'personal', name: 'Personal', emoji: '❤️', theme: 'light', bgUrl: 'https://images.unsplash.com/photo-1518104593124-ac2e82a5eb9d?q=80&w=1920&auto=format&fit=crop' },
   { id: 'ideas', name: 'Ideas', emoji: '🚀', theme: 'dark', bgUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&auto=format&fit=crop' },
 ]
+
+const getDynamicBackground = () => {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 12) {
+    return { bgUrl: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?q=80&w=1920&auto=format&fit=crop', theme: 'light' }; // Morning - Warm
+  } else if (hour >= 12 && hour < 17) {
+    return { bgUrl: 'https://images.unsplash.com/photo-1525498128493-380d1990a112?q=80&w=1920&auto=format&fit=crop', theme: 'light' }; // Afternoon - White/Blue
+  } else if (hour >= 17 && hour < 20) {
+    return { bgUrl: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?q=80&w=1920&auto=format&fit=crop', theme: 'dark' }; // Evening - Orange
+  } else {
+    return { bgUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1920&auto=format&fit=crop', theme: 'dark' }; // Night - Dark Sky
+  }
+}
 
 export default function App() {
   const [tasks, setTasks] = useState([])
@@ -45,15 +58,22 @@ export default function App() {
   useEffect(() => {
     const space = SPACES.find(s => s.id === activeSpace)
     if (space) {
-      if (space.bgUrl) {
-        document.body.style.backgroundImage = `url("${space.bgUrl}")`
+      if (space.id === 'all') {
+        const dynamic = getDynamicBackground();
+        document.body.style.backgroundImage = `url("${dynamic.bgUrl}")`
         document.body.style.backgroundSize = 'cover'
         document.body.style.backgroundAttachment = 'fixed'
         document.body.style.backgroundPosition = 'center'
+        setTheme(dynamic.theme)
       } else {
-        document.body.style.backgroundImage = 'none'
-      }
-      if (space.id !== 'all') {
+        if (space.bgUrl) {
+          document.body.style.backgroundImage = `url("${space.bgUrl}")`
+          document.body.style.backgroundSize = 'cover'
+          document.body.style.backgroundAttachment = 'fixed'
+          document.body.style.backgroundPosition = 'center'
+        } else {
+          document.body.style.backgroundImage = 'none'
+        }
         setTheme(space.theme)
       }
     }
